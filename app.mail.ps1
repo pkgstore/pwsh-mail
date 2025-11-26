@@ -28,6 +28,8 @@ param(
   [Parameter(HelpMessage='Enable or disable encrypted connection.')]
   [switch]$SSL = $false,
   [Alias('Host')][string]$Hostname = ([System.Net.Dns]::GetHostByName([string]'localhost').HostName),
+  [Alias('S')][string]$Subject,
+  [Alias('B')][string]$Body,
   [Alias('F')][string]$From,
   [Alias('T')][string[]]$To,
   [Alias('CC')][string[]]$CC,
@@ -40,6 +42,7 @@ $S = ((Get-Item "${PSCommandPath}").Basename + '.ini')
 $P = (Get-Content -Path "${PSScriptRoot}\${S}" | ConvertFrom-StringData)
 $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandProperty 'UUID')
 $HID = ((${Hostname} + ':' + ${UUID}).ToUpper())
+$DATE = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
@@ -55,7 +58,7 @@ function Start-Smtp {
   $MailMessage.Subject = $Subject
   $MailMessage.Body = $Body
   $MailMessage.From = $From
-  $MailMessage.IsBodyHtml = $True
+  $MailMessage.IsBodyHtml = $False
 
   if ($To.Count -gt 0) { foreach ($Person in $To) { $MailMessage.To.Add($Person) } }
   if ($CC.Count -gt 0) { foreach ($Person in $CC) { $MailMessage.CC.Add($Person) } }
@@ -89,12 +92,13 @@ function Start-Smtp {
 }
 
 function Send-Msg() {
-  $Subject = "Windows Server Backup: ${Hostname}"
+  $Subject = "${Subject}"
   $Body = @"
+${Body}
 
 --
 #ID:${HID}
-#TYPE:BACKUP:ERROR
+#DATE:${DATE}
 "@
 
   Start-Smtp -Subject "${Subject}" -Body "${Body}"
