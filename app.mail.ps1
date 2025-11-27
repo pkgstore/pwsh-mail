@@ -66,7 +66,7 @@ function Start-Smtp {
 
   if ($Attachment.Count -gt 0) {
       foreach ($File in $Attachment) {
-          $Extension = (((Get-ChildItem -Path $File.FilePath).extension).toUpper())
+          $Extension = (((Get-ChildItem -Path $File.FilePath).extension).ToUpper())
           switch ($Extension) {
             '.GIF'  { $ContentType = 'Image/gif' }
             '.JPG'  { $ContentType = 'Image/jpeg' }
