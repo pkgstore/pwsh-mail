@@ -29,11 +29,12 @@ param(
   [Parameter(Mandatory)][Alias('B')][string]$Body,
   [Parameter(Mandatory)][Alias('F')][string]$From,
   [Parameter(Mandatory)][Alias('T')][string[]]$To,
-  [Alias('CC')][string[]]$CC,
-  [Alias('BCC')][string[]]$BCC,
+  [string[]]$Cc,
+  [string[]]$Bcc,
   [Alias('A')][string[]]$Attachment,
   [ValidateSet('Low', 'Normal', 'High')][Alias('P')][string]$Priority = 'Normal',
-  [Alias('H')][string]$Hostname = ([System.Net.Dns]::GetHostByName([string]'localhost').HostName),
+  [Alias('H')][string]$Hostname = ([System.Net.Dns]::GetHostEntry($env:ComputerName).HostName),
+  [switch]$HTML = $false,
   [switch]$SSL = $false
 )
 
@@ -57,32 +58,12 @@ function Start-Smtp {
   $MailMessage.Subject = $Subject
   $MailMessage.Body = $Body
   $MailMessage.From = $From
-  $MailMessage.IsBodyHtml = $False
+  $MailMessage.IsBodyHtml = $HTML
 
-  if ($To.Count -gt 0) { foreach ($Person in $To) { $MailMessage.To.Add($Person) } }
-  if ($CC.Count -gt 0) { foreach ($Person in $CC) { $MailMessage.CC.Add($Person) } }
-  if ($BCC.Count -gt 0) { foreach ($Person in $BCC) { $MailMessage.BCC.Add($Person) } }
-
-  if ($Attachment.Count -gt 0) {
-      foreach ($File in $Attachment) {
-          $Extension = (((Get-ChildItem -Path $File.FilePath).extension).ToLower())
-          switch ($Extension) {
-            '.gif'  { $ContentType = 'Image/gif' }
-            '.jpg'  { $ContentType = 'Image/jpeg' }
-            '.jpeg' { $ContentType = 'Image/jpeg' }
-            '.png'  { $ContentType = 'Image/png' }
-            '.csv'  { $ContentType = 'text/csv' }
-            '.txt'  { $ContentType = 'text/plain' }
-          }
-          $Attachment = @()
-          $Attachment += (New-Object System.Net.Mail.Attachment($File.FilePath, $ContentType))
-          if ($null -ne $File.ContentID) { $Attachment[-1].ContentID = $File.ContentID }
-          if ($ContentType.Substring(0,4) -eq 'text') {
-            $Attachment[-1].ContentDisposition.FileName = ((Get-ChildItem -Path $File.FilePath).Name)
-          }
-          $MailMessage.Attachments.Add($Attachment[-1])
-      }
-  }
+  $To.ForEach({ $MailMessage.To.Add($_) })
+  $Cc.ForEach({ $MailMessage.CC.Add($_) })
+  $Bcc.ForEach({ $MailMessage.BCC.Add($_) })
+  $Attachment.ForEach({ $MailMessage.Attachments.Add($(New-Object System.Net.Mail.Attachment($_))) })
 
   $SmtpClient = (New-Object Net.Mail.SmtpClient($P.Server, $P.Port))
   $SmtpClient.EnableSsl = $SSL
@@ -104,4 +85,5 @@ ${Body}
 }
 
 function Start-Script() {
+  Send-Msg
 }; Start-Script
