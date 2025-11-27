@@ -25,17 +25,16 @@
 # -------------------------------------------------------------------------------------------------------------------- #
 
 param(
-  [Parameter(HelpMessage='Enable or disable encrypted connection.')]
-  [switch]$SSL = $false,
-  [Alias('Host')][string]$Hostname = ([System.Net.Dns]::GetHostByName([string]'localhost').HostName),
-  [Alias('S')][string]$Subject,
-  [Alias('B')][string]$Body,
-  [Alias('F')][string]$From,
-  [Alias('T')][string[]]$To,
+  [Parameter(Mandatory)][Alias('S')][string]$Subject,
+  [Parameter(Mandatory)][Alias('B')][string]$Body,
+  [Parameter(Mandatory)][Alias('F')][string]$From,
+  [Parameter(Mandatory)][Alias('T')][string[]]$To,
   [Alias('CC')][string[]]$CC,
   [Alias('BCC')][string[]]$BCC,
   [Alias('A')][string[]]$Attachment,
-  [Alias('P')][string]$Priority = 'Normal'
+  [ValidateSet('Low', 'Normal', 'High')][Alias('P')][string]$Priority = 'Normal',
+  [Alias('H')][string]$Hostname = ([System.Net.Dns]::GetHostByName([string]'localhost').HostName),
+  [switch]$SSL = $false
 )
 
 $S = ((Get-Item "${PSCommandPath}").Basename + '.ini')
@@ -66,28 +65,28 @@ function Start-Smtp {
 
   if ($Attachment.Count -gt 0) {
       foreach ($File in $Attachment) {
-          $Extension = (((Get-ChildItem -Path $File.FilePath).extension).ToUpper())
+          $Extension = (((Get-ChildItem -Path $File.FilePath).extension).ToLower())
           switch ($Extension) {
-            '.GIF'  { $ContentType = 'Image/gif' }
-            '.JPG'  { $ContentType = 'Image/jpeg' }
-            '.JPEG' { $ContentType = 'Image/jpeg' }
-            '.PNG'  { $ContentType = 'Image/png' }
-            '.CSV'  { $ContentType = 'text/csv' }
-            '.TXT'  { $ContentType = 'text/plain' }
+            '.gif'  { $ContentType = 'Image/gif' }
+            '.jpg'  { $ContentType = 'Image/jpeg' }
+            '.jpeg' { $ContentType = 'Image/jpeg' }
+            '.png'  { $ContentType = 'Image/png' }
+            '.csv'  { $ContentType = 'text/csv' }
+            '.txt'  { $ContentType = 'text/plain' }
           }
           $Attachment = @()
           $Attachment += (New-Object System.Net.Mail.Attachment($File.FilePath, $ContentType))
           if ($null -ne $File.ContentID) { $Attachment[-1].ContentID = $File.ContentID }
           if ($ContentType.Substring(0,4) -eq 'text') {
-            $Attachment[-1].ContentDisposition.FileName = (((Get-ChildItem -Path $File.FilePath).Name))
+            $Attachment[-1].ContentDisposition.FileName = ((Get-ChildItem -Path $File.FilePath).Name)
           }
           $MailMessage.Attachments.Add($Attachment[-1])
       }
   }
 
-  $SmtpClient = (New-Object Net.Mail.SmtpClient("$($P.Server)", "$($P.Port)"))
+  $SmtpClient = (New-Object Net.Mail.SmtpClient($P.Server, $P.Port))
   $SmtpClient.EnableSsl = $SSL
-  $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential("$($P.User)", "$($P.Password)"))
+  $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential($P.User, $P.Password))
   $SmtpClient.Send($MailMessage)
 }
 
