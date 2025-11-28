@@ -168,7 +168,7 @@ function Start-Smtp {
     $SmtpClient.EnableSsl = $SSL
     $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential($P.User, $P.Password))
     $SmtpClient.Send($(Write-Mail))
-    Write-Host "Sent successfully!${NL}" -ForegroundColor 'Green' && $(Write-Status)
+    Write-Host "Email sent successfully!${NL}" -ForegroundColor 'Green' && $(Write-Status)
   } catch {
     Write-Error "ERROR: $($_.Exception.Message)"
   }
