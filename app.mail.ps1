@@ -61,15 +61,41 @@ https://libsys.ru/
 # -------------------------------------------------------------------------------------------------------------------- #
 
 param(
-  [Parameter(Mandatory)][Alias('S','Subj')][string]$Subject,
-  [Parameter(Mandatory)][Alias('B','Text')][string]$Body,
-  [Parameter(Mandatory)][Alias('F')][string]$From,
-  [Parameter(Mandatory)][Alias('T')][string[]]$To,
-  [Alias('C','Copy')][string[]]$Cc,
-  [Alias('BC','HideCopy')][string[]]$Bcc,
-  [Alias('A','File')][string[]]$Attachment,
-  [ValidateSet('Low','Normal','High')][Alias('P')][string]$Priority = 'Normal',
-  [Alias('H','Host')][string]$Hostname = ([System.Net.Dns]::GetHostEntry($env:ComputerName).HostName),
+  [Parameter(Mandatory)]
+  [Alias('S', 'Subj')]
+  [string]$Subject,
+
+  [Parameter(Mandatory)]
+  [Alias('B', 'Text')]
+  [string]$Body,
+
+  [Parameter(Mandatory)]
+  [Alias('F')]
+  [string]$From,
+
+  [Parameter(Mandatory)]
+  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')]
+  [Alias('T')]
+  [string[]]$To,
+
+  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')]
+  [Alias('C', 'Copy')]
+  [string[]]$Cc,
+
+  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')]
+  [Alias('BC', 'HideCopy')]
+  [string[]]$Bcc,
+
+  [Alias('A','File')]
+  [string[]]$Attachment,
+
+  [ValidateSet('Low', 'Normal', 'High')]
+  [Alias('P')]
+  [string]$Priority = 'Normal',
+
+  [Alias('H', 'Host')]
+  [string]$Hostname = ([System.Net.Dns]::GetHostEntry($env:ComputerName).HostName),
+
   [switch]$HTML,
   [switch]$SSL,
   [switch]$BypassCertValid
@@ -121,8 +147,18 @@ function Write-Mail {
 }
 
 function ConvertTo-String ($data) {
-  $data = ($data | Join-String -SingleQuote -Separator ', ')
+  $data = ($data | Join-String -Separator ', ')
   return $data
+}
+
+function Write-Status {
+    $Info = @(
+      "Title: $(ConvertTo-String (Write-Mail).Subject)"
+      "From:  $(ConvertTo-String (Write-Mail).From)"
+      "To:    $(ConvertTo-String (Write-Mail).To)"
+      "CC:    $(ConvertTo-String (Write-Mail).CC)"
+      "BCC:   $(ConvertTo-String (Write-Mail).BCC)"
+    ); $Info | ForEach-Object { Write-Host $_ -ForegroundColor 'Yellow' }
 }
 
 function Start-Smtp {
@@ -132,7 +168,7 @@ function Start-Smtp {
     $SmtpClient.EnableSsl = $SSL
     $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential($P.User, $P.Password))
     $SmtpClient.Send($(Write-Mail))
-    Write-Host "Email $(ConvertTo-String (Write-Mail).Subject) from $(ConvertTo-String (Write-Mail).From) to $(ConvertTo-String (Write-Mail).To) sent successfully!"
+    Write-Host "Sent successfully!${NL}" -ForegroundColor 'Green' && $(Write-Status)
   } catch {
     Write-Error "ERROR: $($_.Exception.Message)"
   }
