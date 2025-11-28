@@ -127,9 +127,9 @@ function ConvertTo-String ($data) {
 
 function Start-Smtp {
   try {
+    if ($BypassCertValid) { [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } }
     $SmtpClient = (New-Object Net.Mail.SmtpClient($P.Server, $P.Port))
     $SmtpClient.EnableSsl = $SSL
-    if ($BypassCertValid) { [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } }
     $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential($P.User, $P.Password))
     $SmtpClient.Send($(Write-Mail))
     Write-Host "Email $(ConvertTo-String (Write-Mail).Subject) from $(ConvertTo-String (Write-Mail).From) to $(ConvertTo-String (Write-Mail).To) sent successfully!"
