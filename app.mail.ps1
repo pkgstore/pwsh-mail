@@ -142,7 +142,12 @@ function Write-Mail {
   $To.ForEach({ $Mail.To.Add($_) })
   $Cc.ForEach({ $Mail.CC.Add($_) })
   $Bcc.ForEach({ $Mail.BCC.Add($_) })
-  $Attachment.ForEach({ $Mail.Attachments.Add($(New-Object System.Net.Mail.Attachment($_))) })
+
+  $Attachment.ForEach({
+    if (Test-Path -Path "${_}" -PathType 'Leaf') {
+      $Mail.Attachments.Add($(New-Object System.Net.Mail.Attachment($_)))
+    }
+  })
 
   return $Mail
 }
