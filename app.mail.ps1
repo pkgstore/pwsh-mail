@@ -5,7 +5,7 @@
 .AUTHOREMAIL  mail@kai.kim
 .TAGS         windows server mail
 .LICENSEURI   https://choosealicense.com/licenses/mit/
-.PROJECTURI   https://libsys.ru/ru/
+.PROJECTURI   https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
 #>
 
 #Requires -Version 7.2
@@ -16,46 +16,8 @@ Sends an email notification using SMTP.
 
 .DESCRIPTION
 
-.PARAMETER Subject
-The subject of the email.
-
-.PARAMETER Body
-The body of the email. Can be plain text or HTML based on the 'HTML' flag.
-
-.PARAMETER From
-The email address of the sender.
-
-.PARAMETER To
-An array of recipient email addresses.
-
-.PARAMETER Cc
-An optional array of CC recipient email addresses.
-
-.PARAMETER Bcc
-An optional array of BCC recipient email addresses.
-
-.PARAMETER Attachment
-An optional file path for an email attachment.
-
-.PARAMETER Priority
-
-.PARAMETER HTML
-
-.PARAMETER SSL
-
-.PARAMETER BypassCertValid
-
-.EXAMPLE
-.\app.mail.ps1 -Subject 'Example' -Body 'Hello world!' -From 'mail@example.com' -To 'mail@example.org'
-
-.EXAMPLE
-.\app.mail.ps1 -Subject 'Example' -Body 'Hello world!' -From 'mail@example.com' -To 'mail@example.org' -Attachment 'C:\file.01.txt', 'C:\file.02.txt'
-
-.NOTES
-This function requires appropriate network permissions to access the SMTP server.
-
 .LINK
-https://libsys.ru/
+https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
 #>
 
 # -------------------------------------------------------------------------------------------------------------------- #
