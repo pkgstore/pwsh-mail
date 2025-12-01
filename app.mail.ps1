@@ -8,6 +8,8 @@
 .PROJECTURI   https://libsys.ru/ru/
 #>
 
+#Requires -Version 7.2
+
 <#
 .SYNOPSIS
 Sends an email notification using SMTP.
