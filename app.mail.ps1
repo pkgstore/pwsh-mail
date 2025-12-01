@@ -101,8 +101,9 @@ param(
   [switch]$BypassCertValid
 )
 
-$S = ((Get-Item "${PSCommandPath}").Basename + '.ini')
-$P = (Get-Content -Path "${PSScriptRoot}\${S}" | ConvertFrom-StringData)
+$CFG = ((Get-Item "${PSCommandPath}").Basename + '.ini');
+$P = (Get-Content -Path "${PSScriptRoot}\${CFG}" | ConvertFrom-StringData)
+$LOG = "${PSScriptRoot}\log.mail.txt"
 $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandProperty 'UUID')
 $HID = ((${Hostname} + ':' + ${UUID}).ToUpper())
 $DATE = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
@@ -151,15 +152,15 @@ function Write-Status {
       [PSCustomObject]@{Name="Subject"; Value=(Write-Mail).Subject}
       [PSCustomObject]@{Name="From"; Value=(Write-Mail).From}
       [PSCustomObject]@{Name="To"; Value=(Write-Mail).To}
-    )
-
-    if ($Cc) { $Data += @([PSCustomObject]@{Name="CC"; Value=(Write-Mail).CC}) }
-    if ($Bcc) { $Data += @([PSCustomObject]@{Name="BCC"; Value=(Write-Mail).BCC}) }
-
-    $Data | Select-Object @{
-      Name="Name"; Expression={$_.Name.PadRight(8)}
+      [PSCustomObject]@{Name="CC"; Value=(Write-Mail).CC}
+      [PSCustomObject]@{Name="BCC"; Value=(Write-Mail).BCC}
+      [PSCustomObject]@{Name="Priority"; Value=(Write-Mail).Priority}
+      [PSCustomObject]@{Name="HTML"; Value=(Write-Mail).IsBodyHtml}
+      [PSCustomObject]@{Name="Attachment"; Value=(Write-Mail).Attachments.Name}
+    ); $Data | Select-Object @{
+      Name="Name"; Expression={$_.Name.PadRight(11)}
     }, @{
-      Name="Value"; Expression={$_.Value.ToString()}
+      Name="Value"; Expression={$_.Value | Join-String -Separator ', '}
     } | ForEach-Object { Write-Host "$($_.Name): $($_.Value)" -ForegroundColor 'Yellow' }
 }
 
@@ -177,5 +178,7 @@ function Start-Smtp {
 }
 
 function Start-Script() {
+  Start-Transcript -Path "${LOG}"
   Start-Smtp
+  Stop-Transcript
 }; Start-Script
