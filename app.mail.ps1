@@ -146,19 +146,21 @@ function Write-Mail {
   return $Mail
 }
 
-function ConvertTo-String ($data) {
-  $data = ($data | Join-String -Separator ', ')
-  return $data
-}
-
 function Write-Status {
-    $Info = @(
-      "Title: $(ConvertTo-String (Write-Mail).Subject)"
-      "From:  $(ConvertTo-String (Write-Mail).From)"
-      "To:    $(ConvertTo-String (Write-Mail).To)"
-      "CC:    $(ConvertTo-String (Write-Mail).CC)"
-      "BCC:   $(ConvertTo-String (Write-Mail).BCC)"
-    ); $Info | ForEach-Object { Write-Host $_ -ForegroundColor 'Yellow' }
+    $Data = @(
+      [PSCustomObject]@{Name="Subject"; Value=(Write-Mail).Subject}
+      [PSCustomObject]@{Name="From"; Value=(Write-Mail).From}
+      [PSCustomObject]@{Name="To"; Value=(Write-Mail).To}
+    )
+
+    if ($Cc) { $Data += @([PSCustomObject]@{Name="CC"; Value=(Write-Mail).CC}) }
+    if ($Bcc) { $Data += @([PSCustomObject]@{Name="BCC"; Value=(Write-Mail).BCC}) }
+
+    $Data | Select-Object @{
+      Name="Name"; Expression={$_.Name.PadRight(8)}
+    }, @{
+      Name="Value"; Expression={$_.Value.ToString()}
+    } | ForEach-Object { Write-Host "$($_.Name): $($_.Value)" -ForegroundColor 'Yellow' }
 }
 
 function Start-Smtp {
