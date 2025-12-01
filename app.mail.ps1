@@ -149,18 +149,18 @@ function Write-Mail {
 
 function Write-Status {
     $Data = @(
-      [PSCustomObject]@{Name="Subject"; Value=(Write-Mail).Subject}
-      [PSCustomObject]@{Name="From"; Value=(Write-Mail).From}
-      [PSCustomObject]@{Name="To"; Value=(Write-Mail).To}
-      [PSCustomObject]@{Name="CC"; Value=(Write-Mail).CC}
-      [PSCustomObject]@{Name="BCC"; Value=(Write-Mail).BCC}
-      [PSCustomObject]@{Name="Priority"; Value=(Write-Mail).Priority}
-      [PSCustomObject]@{Name="HTML"; Value=(Write-Mail).IsBodyHtml}
-      [PSCustomObject]@{Name="Attachment"; Value=(Write-Mail).Attachments.Name}
+      [PSCustomObject]@{Name='Subject'; Value=(Write-Mail).Subject}
+      [PSCustomObject]@{Name='From'; Value=(Write-Mail).From}
+      [PSCustomObject]@{Name='To'; Value=(Write-Mail).To}
+      [PSCustomObject]@{Name='CC'; Value=(Write-Mail).CC}
+      [PSCustomObject]@{Name='BCC'; Value=(Write-Mail).BCC}
+      [PSCustomObject]@{Name='Priority'; Value=(Write-Mail).Priority}
+      [PSCustomObject]@{Name='HTML'; Value=(Write-Mail).IsBodyHtml}
+      [PSCustomObject]@{Name='Attachment'; Value=(Write-Mail).Attachments.Name}
     ); $Data | Select-Object @{
-      Name="Name"; Expression={$_.Name.PadRight(11)}
+      Name='Name'; Expression={$_.Name.PadRight(11)}
     }, @{
-      Name="Value"; Expression={$_.Value | Join-String -Separator ', '}
+      Name='Value'; Expression={$_.Value | Join-String -Separator ', '}
     } | ForEach-Object { Write-Host "$($_.Name): $($_.Value)" -ForegroundColor 'Yellow' }
 }
 
