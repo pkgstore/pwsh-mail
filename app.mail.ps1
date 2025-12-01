@@ -2,7 +2,7 @@
 .VERSION      0.1.0
 .GUID         3f9da429-27eb-46de-a72c-1b0ba149a30e
 .AUTHOR       Kai Kimera
-.AUTHOREMAIL  mail@kai.kim
+.AUTHOREMAIL  mail@kaikim.ru
 .TAGS         windows server mail
 .LICENSEURI   https://choosealicense.com/licenses/mit/
 .PROJECTURI   https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
@@ -16,6 +16,12 @@ Sends an email notification using SMTP.
 
 .DESCRIPTION
 
+.EXAMPLE
+.\app.mail.ps1 -Subject 'Example' -Body 'Hello world!' -From 'mail@example.com' -To 'mail@example.org'
+
+.EXAMPLE
+.\app.mail.ps1 -Subject 'Example' -Body 'Hello world!' -From 'mail@example.com' -To 'mail@example.org' -Attachment 'C:\file.01.txt', 'C:\file.02.txt'
+
 .LINK
 https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
 #>
@@ -25,6 +31,9 @@ https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
 # -------------------------------------------------------------------------------------------------------------------- #
 
 param(
+  [Alias('H', 'Host')]
+  [string]$Hostname = ([System.Net.Dns]::GetHostEntry($env:ComputerName).HostName),
+
   [Parameter(Mandatory)]
   [Alias('S', 'Subj')]
   [string]$Subject,
@@ -56,9 +65,6 @@ param(
   [ValidateSet('Low', 'Normal', 'High')]
   [Alias('P')]
   [string]$Priority = 'Normal',
-
-  [Alias('H', 'Host')]
-  [string]$Hostname = ([System.Net.Dns]::GetHostEntry($env:ComputerName).HostName),
 
   [switch]$HTML,
   [switch]$SSL,
