@@ -31,41 +31,15 @@ https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
 # -------------------------------------------------------------------------------------------------------------------- #
 
 param(
-  [Alias('H', 'Host')]
-  [string]$Hostname = ([System.Net.Dns]::GetHostEntry($env:ComputerName).HostName),
-
-  [Parameter(Mandatory)]
-  [Alias('S', 'Subj')]
-  [string]$Subject,
-
-  [Parameter(Mandatory)]
-  [Alias('B', 'Text')]
-  [string]$Body,
-
-  [Parameter(Mandatory)]
-  [Alias('F')]
-  [string]$From,
-
-  [Parameter(Mandatory)]
-  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')]
-  [Alias('T')]
-  [string[]]$To,
-
-  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')]
-  [Alias('C', 'Copy')]
-  [string[]]$Cc,
-
-  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')]
-  [Alias('BC', 'HideCopy')]
-  [string[]]$Bcc,
-
-  [Alias('A','File')]
+  [string]$Hostname = ([System.Net.Dns]::GetHostEntry([System.Environment]::MachineName).HostName),
+  [Parameter(Mandatory)][string]$Subject,
+  [Parameter(Mandatory)][string]$Body,
+  [Parameter(Mandatory)][string]$From,
+  [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$To,
+  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Cc,
+  [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Bcc,
   [string[]]$Attachment,
-
-  [ValidateSet('Low', 'Normal', 'High')]
-  [Alias('P')]
-  [string]$Priority = 'Normal',
-
+  [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
   [switch]$HTML,
   [switch]$SSL,
   [switch]$BypassCertValid
@@ -75,7 +49,7 @@ $CFG = ((Get-Item "${PSCommandPath}").Basename + '.ini');
 $P = (Get-Content -Path "${PSScriptRoot}\${CFG}" | ConvertFrom-StringData)
 $LOG = "${PSScriptRoot}\log.mail.txt"
 $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandProperty 'UUID')
-$HID = ((${Hostname} + ':' + ${UUID}).ToUpper())
+$HID = (-join ($Hostname, ':', $UUID).ToUpper())
 $DATE = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
 $NL = [Environment]::NewLine
 
@@ -86,10 +60,19 @@ $NL = [Environment]::NewLine
 function Write-Sign {
   $Sign = switch ( $true ) {
     $HTML {
-      "<br><br>-- <ul><li><pre><code>#ID:${HID}</code></pre></li><li><pre><code>#DATE:${DATE}</code></pre></li></ul>"
+      -join (
+        '<br><br>-- <ul>',
+        "<li><pre><code>#ID:${HID}</code></pre></li>",
+        "<li><pre><code>#DATE:${DATE}</code></pre></li>",
+        '</ul>'
+      )
     }
     default {
-      "${NL}${NL}-- ${NL}#ID:${HID}${NL}#DATE:${DATE}"
+      -join (
+        "${NL}${NL}-- ",
+        "${NL}#ID:${HID}",
+        "${NL}#DATE:${DATE}"
+      )
     }
   }
 
@@ -99,7 +82,7 @@ function Write-Sign {
 function Write-Mail {
   $Mail = (New-Object System.Net.Mail.MailMessage)
   $Mail.Subject = $Subject
-  $Mail.Body = (-join ("${Body}", "$(Write-Sign)"))
+  $Mail.Body = (-join ($Body, $(Write-Sign)))
   $Mail.From = $From
   $Mail.Priority = $Priority
   $Mail.IsBodyHtml = $HTML
