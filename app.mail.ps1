@@ -38,7 +38,7 @@ param(
   [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$To,
   [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Cc,
   [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Bcc,
-  [string[]]$Attachment,
+  [SupportsWildcards()][string[]]$Attachment,
   [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
   [switch]$HTML,
   [switch]$SSL,
@@ -57,7 +57,7 @@ $NL = [Environment]::NewLine
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
 
-function Write-Sign {
+function New-Sign {
   $Sign = switch ( $true ) {
     $HTML {
       -join (
@@ -79,59 +79,45 @@ function Write-Sign {
   return $Sign
 }
 
-function Write-Mail {
-  $Mail = (New-Object System.Net.Mail.MailMessage)
-  $Mail.Subject = $Subject
-  $Mail.Body = (-join ($Body, $(Write-Sign)))
-  $Mail.From = $From
-  $Mail.Priority = $Priority
-  $Mail.IsBodyHtml = $HTML
-
-  $To.ForEach({ $Mail.To.Add($_) })
-  $Cc.ForEach({ $Mail.CC.Add($_) })
-  $Bcc.ForEach({ $Mail.BCC.Add($_) })
-
+function Update-Attachment {
   $Attachment.ForEach({
-    if (Test-Path -Path "${_}" -PathType 'Leaf') {
-      $Mail.Attachments.Add($(New-Object System.Net.Mail.Attachment($_)))
-    }
+    Rename-Item -Path "${_}" -NewName "${_}.send"
   })
-
-  return $Mail
 }
 
-function Write-Status {
-    $Data = @(
-      [PSCustomObject]@{Name='Subject'; Value=(Write-Mail).Subject}
-      [PSCustomObject]@{Name='From'; Value=(Write-Mail).From}
-      [PSCustomObject]@{Name='To'; Value=(Write-Mail).To}
-      [PSCustomObject]@{Name='CC'; Value=(Write-Mail).CC}
-      [PSCustomObject]@{Name='BCC'; Value=(Write-Mail).BCC}
-      [PSCustomObject]@{Name='Priority'; Value=(Write-Mail).Priority}
-      [PSCustomObject]@{Name='HTML'; Value=(Write-Mail).IsBodyHtml}
-      [PSCustomObject]@{Name='Attachment'; Value=(Write-Mail).Attachments.Name}
-    ); $Data | Select-Object @{
-      Name='Name'; Expression={$_.Name.PadRight(11)}
-    }, @{
-      Name='Value'; Expression={$_.Value | Join-String -Separator ', '}
-    } | ForEach-Object { Write-Host "$($_.Name): $($_.Value)" -ForegroundColor 'Yellow' }
-}
-
-function Start-Smtp {
+function Send-Mail {
   try {
+    $Mail = (New-Object System.Net.Mail.MailMessage)
+    $Mail.Subject = $Subject
+    $Mail.Body = (-join ($Body, $(New-Sign)))
+    $Mail.From = $From
+    $Mail.Priority = $Priority
+    $Mail.IsBodyHtml = $HTML
+    $To.ForEach({ $Mail.To.Add($_) })
+    $Cc.ForEach({ $Mail.CC.Add($_) })
+    $Bcc.ForEach({ $Mail.BCC.Add($_) })
+    $Attachment.ForEach({
+      if (Test-Path -Path "${_}" -PathType 'Leaf') {
+        $Mail.Attachments.Add((New-Object System.Net.Mail.Attachment($_)))
+      }
+    })
+
     if ($BypassCertValid) { [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } }
     $SmtpClient = (New-Object Net.Mail.SmtpClient($P.Server, $P.Port))
     $SmtpClient.EnableSsl = $SSL
     $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential($P.User, $P.Password))
-    $SmtpClient.Send($(Write-Mail))
-    Write-Host "Email sent successfully!${NL}" -ForegroundColor 'Green' && $(Write-Status)
+    $SmtpClient.Send($Mail)
+    Write-Host "Email sent successfully!${NL}" -ForegroundColor 'Green'
   } catch {
     Write-Error "ERROR: $($_.Exception.Message)"
+  } finally {
+    $Mail.Dispose()
+    $SmtpClient.Dispose()
   }
 }
 
 function Start-Script() {
   Start-Transcript -Path "${LOG}"
-  Start-Smtp
+  Send-Mail
   Stop-Transcript
 }; Start-Script
