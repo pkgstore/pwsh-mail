@@ -33,7 +33,8 @@ https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
 param(
   [string]$Hostname = ([System.Net.Dns]::GetHostEntry([System.Environment]::MachineName).HostName),
   [string]$Subject = (Get-Content -Path "${PSScriptRoot}\lib.mail.subject" -Encoding 'UTF8'),
-  [string]$Body = (Get-Content -Path "${PSScriptRoot}\lib.mail.body" -Raw -Encoding 'UTF8'),
+  [string]$Body = (Get-Content -Path "${PSScriptRoot}\lib.mail.body" -Encoding 'UTF8' -Raw),
+  [string]$Sign = (Get-Content -Path "${PSScriptRoot}\lib.mail.sign" -Encoding 'UTF8' -Raw),
   [Parameter(Mandatory)][string]$From,
   [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$To,
   [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Cc,
@@ -47,6 +48,7 @@ param(
   [switch]$HTML,
   [switch]$SSL,
   [switch]$NoSign,
+  [switch]$NoMeta,
   [switch]$BypassCertValid
 )
 
@@ -68,33 +70,44 @@ if ($Wildcard) {
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
 
+function Write-Sep {
+  $Sign = switch ( $true ) {
+    $HTML   { -join ('<br><br>', '<hr style="border:none;border-top:1px solid #cccccc;width:100%;">') }
+    default { -join ("${NL}${NL}-- ", "${NL}") }
+  }
+
+  return $Sign
+}
+
 function Write-Sign {
   if ($NoSign) { return }
 
   $Sign = switch ( $true ) {
-    $HTML {
-      -join ('<br><br>-- <ul>', "<li><code>#ID:${HID}</code></li>", "<li><code>#DATE:${DATE}</code></li>", '</ul>')
-    }
-    default {
-      -join ("${NL}${NL}-- ", "${NL}#ID:${HID}", "${NL}#DATE:${DATE}")
-    }
+    $HTML   { -join ("${Sign}", '<br>') }
+    default { -join ("${Sign}", "${NL}") }
   }
 
   return $Sign
+}
+
+function Write-Meta {
+  if ($NoMeta) { return }
+
+  $Meta = switch ( $true ) {
+    $HTML   { -join ('<ul>', "<li><code>#ID:${HID}</code></li>", "<li><code>#DATE:${DATE}</code></li>", '</ul>') }
+    default { -join ("#ID:${HID}${NL}", "#DATE:${DATE}${NL}") }
+  }
+
+  return $Meta
 }
 
 function Write-FileList {
   if (-not $FileList) { return }
 
   $FileList = switch ( $true ) {
-    $HTML {
-      -join ('<br><br><ul>', ($File.ForEach({ "<li><code>${_}</code></li>" }) | Join-String), '</ul>')
-    }
-    default {
-      -join ("${NL}${NL}", ($File.ForEach({ "${_}" }) | Join-String -Separator "${NL}"))
-    }
+    $HTML   { -join ('<br><br><ul>', ($File.ForEach({ "<li><code>${_}</code></li>" }) | Join-String), '</ul>') }
+    default { -join ("${NL}${NL}", ($File.ForEach({ "${_}" }) | Join-String -Separator "${NL}")) }
   }
-
 
   return $FileList
 }
@@ -110,7 +123,7 @@ function Send-Mail {
   try {
     $Mail = (New-Object System.Net.Mail.MailMessage)
     $Mail.Subject = $Subject
-    $Mail.Body = (-join ($Body, $(Write-FileList), $(Write-Sign)))
+    $Mail.Body = (-join ($Body, $(Write-FileList), $(Write-Sep), $(Write-Sign), $(Write-Meta)))
     $Mail.BodyEncoding= $([System.Text.Encoding]::UTF8)
     $Mail.From = $From
     $Mail.Priority = $Priority
