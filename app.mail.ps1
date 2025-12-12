@@ -38,7 +38,7 @@ param(
   [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$To,
   [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Cc,
   [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Bcc,
-  [SupportsWildcards()][string[]]$Attachment,
+  [SupportsWildcards()][string[]]$File,
   [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
   [switch]$Wildcard,
   [switch]$Rename,
@@ -55,8 +55,12 @@ $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandPr
 $HID = (-join ($Hostname, ':', $UUID).ToUpper())
 $DATE = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
 $NL = [Environment]::NewLine
-$Attachment = ($Wildcard) ? (Resolve-Path "${Attachment}" | Select-Object -ExpandProperty 'Path') : $Attachment
-$Attachment.ForEach({ if (-not (Test-Path -LiteralPath "${_}" -PathType 'Leaf')) { exit } })
+
+if ($Wildcard) {
+  $File = (Resolve-Path "${File}" | Select-Object -ExpandProperty 'Path'); if ($null -eq $File ) { exit }
+} else {
+  $File.ForEach({ if (-not (Test-Path -LiteralPath "${_}" -PathType 'Leaf')) { exit } })
+}
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
@@ -84,8 +88,8 @@ function Write-Sign {
   return $Sign
 }
 
-function Update-Attachment {
-  $Attachment.ForEach({
+function Update-File {
+  $File.ForEach({
     if ($Rename) { Move-Item -LiteralPath "${_}" -Destination "${_}.attach" -Force }
     if ($Remove) { Remove-Item -LiteralPath "${_}" -Force }
   })
@@ -102,7 +106,7 @@ function Send-Mail {
     $To.ForEach({ $Mail.To.Add($_) })
     $Cc.ForEach({ $Mail.CC.Add($_) })
     $Bcc.ForEach({ $Mail.BCC.Add($_) })
-    $Attachment.ForEach({ $Mail.Attachments.Add((New-Object System.Net.Mail.Attachment($_))) })
+    $File.ForEach({ $Mail.Attachments.Add((New-Object System.Net.Mail.Attachment($_))) })
 
     if ($BypassCertValid) { [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } }
     $SmtpClient = (New-Object Net.Mail.SmtpClient($P.Server, $P.Port))
@@ -115,7 +119,7 @@ function Send-Mail {
   } finally {
     $Mail.Dispose()
     $SmtpClient.Dispose()
-    Update-Attachment
+    Update-File
   }
 }
 
