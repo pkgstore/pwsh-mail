@@ -48,7 +48,7 @@ param(
   [switch]$BypassCertValid
 )
 
-$CFG = ((Get-Item "${PSCommandPath}").Basename + '.ini');
+$CFG = ((Get-Item "${PSCommandPath}").Basename + '.ini')
 $P = (Get-Content -Path "${PSScriptRoot}\${CFG}" | ConvertFrom-StringData)
 $LOG = "${PSScriptRoot}\log.mail.txt"
 $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandProperty 'UUID')
@@ -112,8 +112,22 @@ function Send-Mail {
     $SmtpClient = (New-Object Net.Mail.SmtpClient($P.Server, $P.Port))
     $SmtpClient.EnableSsl = $SSL
     $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential($P.User, $P.Password))
-    $SmtpClient.Send($Mail)
-    Write-Host "Email sent successfully!${NL}" -ForegroundColor 'Green'
+    $SmtpClient.Send($Mail) && Write-Host "Email sent successfully!${NL}" -ForegroundColor 'Green'
+
+    $Data = @(
+      [PSCustomObject]@{Name='Subject'; Value=$Mail.Subject}
+      [PSCustomObject]@{Name='From'; Value=$Mail.From}
+      [PSCustomObject]@{Name='To'; Value=$Mail.To}
+      [PSCustomObject]@{Name='CC'; Value=$Mail.CC}
+      [PSCustomObject]@{Name='BCC'; Value=$Mail.BCC}
+      [PSCustomObject]@{Name='Priority'; Value=$Mail.Priority}
+      [PSCustomObject]@{Name='HTML'; Value=$Mail.IsBodyHtml}
+      [PSCustomObject]@{Name='File'; Value=$Mail.Attachments.Name}
+    ); $Data | Select-Object @{
+      Name='Name'; Expression={$_.Name.PadRight(9)}
+    }, @{
+      Name='Value'; Expression={$_.Value | Join-String -Separator ', '}
+    } | ForEach-Object { Write-Host "$($_.Name): $($_.Value)" -ForegroundColor 'Yellow' }
   } catch {
     Write-Error "ERROR: $($_.Exception.Message)"
   } finally {
