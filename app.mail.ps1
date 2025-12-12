@@ -32,8 +32,8 @@ https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
 
 param(
   [string]$Hostname = ([System.Net.Dns]::GetHostEntry([System.Environment]::MachineName).HostName),
-  [Parameter(Mandatory)][string]$Subject,
-  [Parameter(Mandatory)][string]$Body,
+  [string]$Subject = (Get-Content -Path "${PSScriptRoot}\lib.mail.subject" -Encoding 'UTF8'),
+  [string]$Body = (Get-Content -Path "${PSScriptRoot}\lib.mail.body" -Raw -Encoding 'UTF8'),
   [Parameter(Mandatory)][string]$From,
   [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$To,
   [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Cc,
@@ -41,10 +41,12 @@ param(
   [SupportsWildcards()][string[]]$File,
   [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
   [switch]$Wildcard,
-  [switch]$Rename,
-  [switch]$Remove,
+  [switch]$FileRename,
+  [switch]$FileRemove,
+  [switch]$FileList,
   [switch]$HTML,
   [switch]$SSL,
+  [switch]$NoSign,
   [switch]$BypassCertValid
 )
 
@@ -67,31 +69,40 @@ if ($Wildcard) {
 # -------------------------------------------------------------------------------------------------------------------- #
 
 function Write-Sign {
+  if ($NoSign) { return }
+
   $Sign = switch ( $true ) {
     $HTML {
-      -join (
-        '<br><br>-- <ul>',
-        "<li><pre><code>#ID:${HID}</code></pre></li>",
-        "<li><pre><code>#DATE:${DATE}</code></pre></li>",
-        '</ul>'
-      )
+      -join ('<br><br>-- <ul>', "<li><code>#ID:${HID}</code></li>", "<li><code>#DATE:${DATE}</code></li>", '</ul>')
     }
     default {
-      -join (
-        "${NL}${NL}-- ",
-        "${NL}#ID:${HID}",
-        "${NL}#DATE:${DATE}"
-      )
+      -join ("${NL}${NL}-- ", "${NL}#ID:${HID}", "${NL}#DATE:${DATE}")
     }
   }
 
   return $Sign
 }
 
+function Write-FileList {
+  if (-not $FileList) { return }
+
+  $FileList = switch ( $true ) {
+    $HTML {
+      -join ('<br><br><ul>', ($File.ForEach({ "<li><code>${_}</code></li>" }) | Join-String), '</ul>')
+    }
+    default {
+      -join ("${NL}${NL}", ($File.ForEach({ "${_}" }) | Join-String -Separator "${NL}"))
+    }
+  }
+
+
+  return $FileList
+}
+
 function Update-File {
   $File.ForEach({
-    if ($Rename) { Move-Item -LiteralPath "${_}" -Destination "${_}.attach" -Force }
-    if ($Remove) { Remove-Item -LiteralPath "${_}" -Force }
+    if ($FileRename) { Move-Item -LiteralPath "${_}" -Destination "${_}.attach" -Force }
+    if ($FileRemove) { Remove-Item -LiteralPath "${_}" -Force }
   })
 }
 
@@ -99,14 +110,18 @@ function Send-Mail {
   try {
     $Mail = (New-Object System.Net.Mail.MailMessage)
     $Mail.Subject = $Subject
-    $Mail.Body = (-join ($Body, $(Write-Sign)))
+    $Mail.Body = (-join ($Body, $(Write-FileList), $(Write-Sign)))
+    $Mail.BodyEncoding= $([System.Text.Encoding]::UTF8)
     $Mail.From = $From
     $Mail.Priority = $Priority
     $Mail.IsBodyHtml = $HTML
     $To.ForEach({ $Mail.To.Add($_) })
     $Cc.ForEach({ $Mail.CC.Add($_) })
     $Bcc.ForEach({ $Mail.BCC.Add($_) })
-    $File.ForEach({ $Mail.Attachments.Add((New-Object System.Net.Mail.Attachment($_))) })
+
+    if (-not $FileList) {
+      $File.ForEach({ $Mail.Attachments.Add((New-Object System.Net.Mail.Attachment($_))) })
+    }
 
     if ($BypassCertValid) { [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } }
     $SmtpClient = (New-Object Net.Mail.SmtpClient($P.Server, $P.Port))
