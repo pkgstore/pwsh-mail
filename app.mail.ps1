@@ -61,7 +61,7 @@ $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandPr
 $HID = (-join ($Hostname, ':', $UUID).ToUpper())
 $DATE = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
 $NL = [Environment]::NewLine
-$TS = (Get-Date -Format 'o' | ForEach-Object { $_ -replace ':', '-' })
+$TS = (Get-Date -UFormat '%s')
 
 if ($Wildcard) {
   $File = (Resolve-Path "${File}" | Select-Object -ExpandProperty 'Path'); if ($null -eq $File ) { exit }
