@@ -41,8 +41,10 @@ param(
   [ValidatePattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$')][string[]]$Bcc,
   [SupportsWildcards()][string[]]$File,
   [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
+  [string]$Storage = 'C:\Storage\Email',
+  [int]$Count = 4,
   [switch]$Wildcard,
-  [switch]$FileRename,
+  [switch]$FileMove,
   [switch]$FileRemove,
   [switch]$FileList,
   [switch]$HTML,
@@ -59,6 +61,7 @@ $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandPr
 $HID = (-join ($Hostname, ':', $UUID).ToUpper())
 $DATE = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
 $NL = [Environment]::NewLine
+$TS = (Get-Date -UFormat '%s')
 
 if ($Wildcard) {
   $File = (Resolve-Path "${File}" | Select-Object -ExpandProperty 'Path'); if ($null -eq $File ) { exit }
@@ -69,6 +72,28 @@ if ($Wildcard) {
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
+
+function New-Storage([string]$Path) {
+  if (-not (Test-Path -LiteralPath "${Path}" -PathType 'Container')) {
+    New-Item -Path "${Path}" -ItemType 'Directory' | Out-Null
+  }
+}
+
+function Remove-Storage([string]$Path = $Storage, [int]$Count = $Count) {
+  if (Test-Path -LiteralPath "${Path}" -PathType 'Container') {
+    Get-ChildItem -Path "${Path}" -Directory | Sort-Object 'CreationTime' -Descending | Select-Object -Skip $Count
+      | Remove-Item -Recurse -Force
+  }
+}
+
+function Move-File([string]$Path) {
+  $Dir = (Join-Path -Path "${Storage}" -ChildPath "${TS}")
+  New-Storage -Path "${Dir}" && Move-Item -LiteralPath "${Path}" -Destination "${Dir}"
+}
+
+function Remove-File([string]$Path) {
+  Remove-Item -LiteralPath "${Path}"
+}
 
 function Write-Sep {
   $Sign = switch ( $true ) {
@@ -113,9 +138,10 @@ function Write-FileList {
 }
 
 function Update-File {
+  Remove-Storage
   $File.ForEach({
-    if ($FileRename) { Move-Item -LiteralPath "${_}" -Destination "${_}.attach" -Force }
-    if ($FileRemove) { Remove-Item -LiteralPath "${_}" -Force }
+    if ($FileMove) { Move-File -Path "${_}" }
+    if ($FileRemove) { Remove-File -Path "${_}" }
   })
 }
 
