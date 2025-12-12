@@ -114,7 +114,7 @@ function Send-Mail {
     $SmtpClient.Credentials = (New-Object System.Net.NetworkCredential($P.User, $P.Password))
     $SmtpClient.Send($Mail) && Write-Host "Email sent successfully!${NL}" -ForegroundColor 'Green'
 
-    $Data = @(
+    $Info = @(
       [PSCustomObject]@{Name='Subject'; Value=$Mail.Subject}
       [PSCustomObject]@{Name='From'; Value=$Mail.From}
       [PSCustomObject]@{Name='To'; Value=$Mail.To}
@@ -122,9 +122,9 @@ function Send-Mail {
       [PSCustomObject]@{Name='BCC'; Value=$Mail.BCC}
       [PSCustomObject]@{Name='Priority'; Value=$Mail.Priority}
       [PSCustomObject]@{Name='HTML'; Value=$Mail.IsBodyHtml}
-      [PSCustomObject]@{Name='File'; Value=$Mail.Attachments.Name}
-    ); $Data | Select-Object @{
-      Name='Name'; Expression={$_.Name.PadRight(9)}
+      [PSCustomObject]@{Name='Attachments'; Value=$Mail.Attachments.Name}
+    ); $Info | Select-Object @{
+      Name='Name'; Expression={$_.Name.PadRight(12)}
     }, @{
       Name='Value'; Expression={$_.Value | Join-String -Separator ', '}
     } | ForEach-Object { Write-Host "$($_.Name): $($_.Value)" -ForegroundColor 'Yellow' }
