@@ -42,8 +42,7 @@ param(
   [SupportsWildcards()][string[]]$File,
   [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
   [string]$Storage = 'C:\Storage\Email',
-  [int]$Count = 4,
-  [switch]$DateTime,
+  [int]$Count = 5,
   [switch]$Wildcard,
   [switch]$FileMove,
   [switch]$FileRemove,
@@ -52,7 +51,8 @@ param(
   [switch]$SSL,
   [switch]$NoSign,
   [switch]$NoMeta,
-  [switch]$BypassCertValid
+  [switch]$BypassCertValid,
+  [switch]$DateTime
 )
 
 $CFG = ((Get-Item "${PSCommandPath}").Basename + '.ini')
@@ -88,6 +88,7 @@ function Remove-Storage([string]$Path = $Storage, [int]$Count = $Count) {
 }
 
 function Move-File([string]$Path) {
+  Remove-Storage
   $Dir = (Join-Path -Path "${Storage}" -ChildPath "${TS}")
   New-Storage -Path "${Dir}" && Move-Item -LiteralPath "${Path}" -Destination "${Dir}"
 }
@@ -139,7 +140,6 @@ function Write-FileList {
 }
 
 function Update-File {
-  Remove-Storage
   $File.ForEach({
     if ($FileMove) { Move-File -Path "${_}" }
     if ($FileRemove) { Remove-File -Path "${_}" }
