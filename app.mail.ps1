@@ -17,10 +17,22 @@ Sends an email notification using SMTP.
 .DESCRIPTION
 
 .EXAMPLE
-.\app.mail.ps1 -Subject 'Example' -Body 'Hello world!' -From 'mail@example.com' -To 'mail@example.org'
+.\app.mail.ps1 -From 'mail@example.com' -To 'mail@example.org'
 
 .EXAMPLE
-.\app.mail.ps1 -Subject 'Example' -Body 'Hello world!' -From 'mail@example.com' -To 'mail@example.org' -Attachment 'C:\file.01.txt', 'C:\file.02.txt'
+.\app.mail.ps1 -From 'mail@example.com' -To 'mail@example.org' -File 'C:\file.01.txt', 'C:\file.02.txt'
+
+.EXAMPLE
+.\app.mail.ps1 -From 'mail@example.com' -To 'mail@example.org' -File 'C:\*.txt' -Wildcard
+
+.EXAMPLE
+.\app.mail.ps1 -From 'mail@example.com' -To 'mail@example.org' -HTML
+
+.EXAMPLE
+.\app.mail.ps1 -From 'mail@example.com' -To 'mail@example.org' -Priority 'High'
+
+.EXAMPLE
+.\app.mail.ps1 -From 'mail@example.com' -To 'mail@example.org' -Cc 'mail@example.net', 'mail@example.biz'
 
 .LINK
 https://libsys.ru/ru/2025/12/1f77872e-d835-510b-9dc0-99ac3b4abadf/
@@ -132,8 +144,19 @@ function Write-FileList {
   if (-not $FileList) { return }
 
   $FileList = switch ( $true ) {
-    $HTML   { -join ('<br><br><ul>', ($File.ForEach({ "<li><code>${_}</code></li>" }) | Join-String), '</ul>') }
-    default { -join ("${NL}${NL}", ($File.ForEach({ "${_}" }) | Join-String -Separator "${NL}")) }
+    $HTML {
+      -join (
+        '<br><br><ul>',
+        ($File.ForEach({ "<li><code>$(Split-Path -Path $_ -Leaf)</code></li>" }) | Join-String),
+        '</ul>'
+      )
+    }
+    default {
+      -join (
+        "${NL}${NL}",
+        ($File.ForEach({ "$(Split-Path -Path $_ -Leaf)" }) | Join-String -Separator "${NL}")
+      )
+    }
   }
 
   return $FileList
