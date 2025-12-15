@@ -92,7 +92,7 @@ function New-Storage([string]$Path) {
   }
 }
 
-function Remove-Storage([string]$Path = $Storage, [int]$Count = $Count) {
+function Clear-Storage([string]$Path = $Storage, [int]$Count = $Count) {
   if (Test-Path -LiteralPath "${Path}" -PathType 'Container') {
     Get-ChildItem -Path "${Path}" -Directory | Sort-Object 'CreationTime' -Descending | Select-Object -Skip $Count
       | Remove-Item -Recurse -Force
@@ -100,9 +100,9 @@ function Remove-Storage([string]$Path = $Storage, [int]$Count = $Count) {
 }
 
 function Move-File([string]$Path) {
-  Remove-Storage
   $Dir = (Join-Path -Path "${Storage}" -ChildPath "${TS}")
   New-Storage -Path "${Dir}" && Move-Item -LiteralPath "${Path}" -Destination "${Dir}"
+  Clear-Storage
 }
 
 function Remove-File([string]$Path) {
