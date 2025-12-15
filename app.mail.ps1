@@ -55,6 +55,7 @@ param(
   [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
   [string]$Storage = 'C:\Storage\Email',
   [int]$Count = 5,
+  [switch]$DateTime,
   [switch]$Wildcard,
   [switch]$FileMove,
   [switch]$FileRemove,
@@ -63,8 +64,7 @@ param(
   [switch]$SSL,
   [switch]$NoSign,
   [switch]$NoMeta,
-  [switch]$BypassCertValid,
-  [switch]$DateTime
+  [switch]$BypassCertValid
 )
 
 $CFG = ((Get-Item "${PSCommandPath}").Basename + '.ini')
