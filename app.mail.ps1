@@ -55,6 +55,7 @@ param(
   [ValidateSet('Low', 'Normal', 'High')][string]$Priority = 'Normal',
   [string]$Storage = 'C:\Storage\Email',
   [int]$Count = 5,
+  [switch]$DateTime,
   [switch]$Wildcard,
   [switch]$FileMove,
   [switch]$FileRemove,
@@ -63,17 +64,16 @@ param(
   [switch]$SSL,
   [switch]$NoSign,
   [switch]$NoMeta,
-  [switch]$BypassCertValid,
-  [switch]$DateTime
+  [switch]$BypassCertValid
 )
 
+$NL = [Environment]::NewLine
 $CFG = ((Get-Item "${PSCommandPath}").Basename + '.ini')
 $P = (Get-Content -Path "${PSScriptRoot}\${CFG}" | ConvertFrom-StringData)
 $LOG = "${PSScriptRoot}\log.mail.txt"
 $UUID = (Get-CimInstance 'Win32_ComputerSystemProduct' | Select-Object -ExpandProperty 'UUID')
 $HID = (-join ($Hostname, ':', $UUID).ToUpper())
 $DATE = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
-$NL = [Environment]::NewLine
 $TS = $DateTime ? (Get-Date -UFormat '%F.%H-%M-%S' -AsUTC) : (Get-Date -UFormat '%s')
 
 if ($Wildcard) {
