@@ -147,7 +147,7 @@ function Write-FileList {
     $HTML {
       -join (
         '<br><br><ul>',
-        ($File.ForEach({ "<li><code>$(Split-Path -Path $_ -Leaf)</code></li>" }) | Join-String),
+        ($File.ForEach({ -join('<li><code>', $(Split-Path -Path "${_}" -Leaf), '</code></li>') }) | Join-String),
         '</ul>'
       )
     }
