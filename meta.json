@@ -1,0 +1,28 @@
+{
+  "name": "Mail",
+  "description": "",
+  "install": {
+    "file": [
+      {
+        "name": "app.mail.ini",
+        "path": "C:\\Apps\\Mail"
+      },
+      {
+        "name": "app.mail.ps1",
+        "path": "C:\\Apps\\Mail"
+      },
+      {
+        "name": "lib.mail.body",
+        "path": "C:\\Apps\\Mail"
+      },
+      {
+        "name": "lib.mail.sign",
+        "path": "C:\\Apps\\Mail"
+      },
+      {
+        "name": "lib.mail.subject",
+        "path": "C:\\Apps\\Mail"
+      }
+    ]
+  }
+}
